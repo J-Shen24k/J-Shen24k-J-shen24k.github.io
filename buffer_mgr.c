@@ -40,6 +40,22 @@ extern void helper(BM_BufferPool *const bm, PageFrame *page)
 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
 }
 
+extern void build(const int numPages)
+{
+	int i;
+	bufferSize = numPages;	
+	PageFrame *page = malloc(sizeof(PageFrame) * numPages);
+	for(i = bufferSize - 1; i >= 0; i--)
+	{
+		page[i].data = NULL;
+		page[i].pageNum = -1;
+		page[i].dirtyBit = 0;
+		page[i].fixCount = 0;
+		page[i].hitNum = 0;	
+		page[i].refNum = 0;
+	}
+}
+
 // Defining FIFO (First In First Out) function
 extern void FIFO(BM_BufferPool *const bm, PageFrame *page)
 {
@@ -233,30 +249,17 @@ extern void CLOCK(BM_BufferPool *const bm, PageFrame *page)
 */
 extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, void *stratData)
 {
+	FILE *f = fopen(pageFileName, "r+");;
+	if (f == null) return RC_FILE_NOT_FOUND;
+	else fclose(f);
+	build(numPages);
 	bm->pageFile = (char *)pageFileName;
 	bm->numPages = numPages;
 	bm->strategy = strategy;
-
-	// Reserver memory space = number of pages x space required for one page
-	PageFrame *page = malloc(sizeof(PageFrame) * numPages);
-	
-	// Buffersize is the total number of pages in memory or the buffer pool.
-	bufferSize = numPages;	
-	int i;
-
-	// Intilalizing all pages in buffer pool. The values of fields (variables) in the page is either NULL or 0
-	for(i = 0; i < bufferSize; i++)
-	{
-		page[i].data = NULL;
-		page[i].pageNum = -1;
-		page[i].dirtyBit = 0;
-		page[i].fixCount = 0;
-		page[i].hitNum = 0;	
-		page[i].refNum = 0;
-	}
-
 	bm->mgmtData = page;
-	writeCount = clockPointer = lfuPointer = 0;
+	writeCount = 0;
+	clockPointer = 0;
+	lfuPointer = 0;
 	return RC_OK;
 		
 }
