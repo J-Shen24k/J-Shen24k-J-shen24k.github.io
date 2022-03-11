@@ -268,23 +268,25 @@ extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName
 // Shutdown i.e. close the buffer pool, thereby removing all the pages from the memory and freeing up all resources and releasing some memory space.
 extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
+	if(bm->mgmtData == NULL)
+	{
+		return RC_NO_POOL;
+	}
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
-	PageFrame *pageFrame = helper(bm, page);
-	// Write all dirty pages (modified pages) back to disk
+	PageFrame *pf = helper(bm, page);
 	forceFlushPool(bm);
-
 	int i;	
 	for(i = 0; i < bufferSize; i++)
 	{
-		// If fixCount != 0, it means that the contents of the page was modified by some client and has not been written back to disk.
-		if(pageFrame[i].fixCount != 0)
+		if (pageFrame[i].fixCount == 0) {}
+		else
 		{
-			return RC_PINNED_PAGES_IN_BUFFER;
+			return RC_BUFFER_HAS_PAGES;
 		}
 	}
 
 	// Releasing space occupied by the page
-	free(pageFrame);
+	free(pf);
 	bm->mgmtData = NULL;
 	return RC_OK;
 }
