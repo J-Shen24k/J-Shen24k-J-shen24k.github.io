@@ -14,6 +14,7 @@ typedef struct Page
  	int refNum;   
 } PageFrame;
 
+SM_FileHandle fh;
 int bufferSize = 0;
 int rearIndex = 0;
 int writeCount = 0;
@@ -57,7 +58,6 @@ extern void FIFO(BM_BufferPool *const bm, PageFrame *page)
 		{
 			if(pageFrame[frontIndex].dirtyBit == 1)
 			{
-				SM_FileHandle fh;
 				openPageFile(bm->pageFile, &fh);
 				writeBlock(pageFrame[frontIndex].pageNum, &fh, pageFrame[frontIndex].data);
 				writeCount++;
@@ -106,7 +106,6 @@ extern void LFU(BM_BufferPool *const bm, PageFrame *page)
 	}
 	if(pageFrame[leastFreqIndex].dirtyBit == 1)
 	{
-		SM_FileHandle fh;
 		openPageFile(bm->pageFile, &fh);
 		writeBlock(pageFrame[leastFreqIndex].pageNum, &fh, pageFrame[leastFreqIndex].data);
 		
@@ -147,7 +146,6 @@ extern void LRU(BM_BufferPool *const bm, PageFrame *page)
 	// If page in memory has been modified (dirtyBit = 1), then write page to disk
 	if(pageFrame[leastHitIndex].dirtyBit == 1)
 	{
-		SM_FileHandle fh;
 		openPageFile(bm->pageFile, &fh);
 		writeBlock(pageFrame[leastHitIndex].pageNum, &fh, pageFrame[leastHitIndex].data);
 		writeCount++;
@@ -171,7 +169,6 @@ extern void CLOCK(BM_BufferPool *const bm, PageFrame *page)
 		{
 			if(pageFrame[clockPointer].dirtyBit == 1)
 			{
-				SM_FileHandle fh;
 				openPageFile(bm->pageFile, &fh);
 				writeBlock(pageFrame[clockPointer].pageNum, &fh, pageFrame[clockPointer].data);
 				writeCount++;
@@ -245,7 +242,6 @@ extern RC forceFlushPool(BM_BufferPool *const bm)
 		else if (pageFrame[i].dirtyBit != 1){}
 		else
 		{
-			SM_FileHandle fh;
 			openPageFile(bm->pageFile, &fh);
 			writeBlock(pageFrame[i].pageNum, &fh, pageFrame[i].data);
 			pageFrame[i].dirtyBit = 0;
@@ -277,22 +273,21 @@ extern RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page)
 	return RC_ERROR;
 }
 
-// This function unpins a page from the memory i.e. removes a page from the memory
 extern RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page)
 {	
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
 	
 	int i;
-	// Iterating through all the pages in the buffer pool
-	for(i = 0; i < bufferSize; i++)
+	boolean done = false;
+	while (i < bufferSize && !done)
 	{
-		// If the current page is the page to be unpinned, then decrease fixCount (which means client has completed work on that page) and exit loop
 		if(pageFrame[i].pageNum == page->pageNum)
 		{
 			pageFrame[i].fixCount--;
-			break;		
-		}		
+				
+		}
+		i++;
 	}
 	return RC_OK;
 }
@@ -310,7 +305,6 @@ extern RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page)
 		// If the current page = page to be written to disk, then right the page to the disk using the storage manager functions
 		if(pageFrame[i].pageNum == page->pageNum)
 		{		
-			SM_FileHandle fh;
 			openPageFile(bm->pageFile, &fh);
 			writeBlock(pageFrame[i].pageNum, &fh, pageFrame[i].data);
 		
@@ -336,7 +330,6 @@ extern RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	if(pageFrame[0].pageNum == -1)
 	{
 		// Reading page from disk and initializing page frame's content in the buffer pool
-		SM_FileHandle fh;
 		openPageFile(bm->pageFile, &fh);
 		pageFrame[0].data = (SM_PageHandle) malloc(PAGE_SIZE);
 		ensureCapacity(pageNum,&fh);
@@ -384,8 +377,9 @@ extern RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 					clockPointer++;
 					break;
 				}				
-			} else {
-				SM_FileHandle fh;
+			} 
+			else 
+			{
 				openPageFile(bm->pageFile, &fh);
 				pageFrame[i].data = (SM_PageHandle) malloc(PAGE_SIZE);
 				readBlock(pageNum, &fh, pageFrame[i].data);
@@ -417,7 +411,6 @@ extern RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			PageFrame *newPage = (PageFrame *) malloc(sizeof(PageFrame));		
 			
 			// Reading page from disk and initializing page frame's content in the buffer pool
-			SM_FileHandle fh;
 			openPageFile(bm->pageFile, &fh);
 			newPage->data = (SM_PageHandle) malloc(PAGE_SIZE);
 			readBlock(pageNum, &fh, newPage->data);
