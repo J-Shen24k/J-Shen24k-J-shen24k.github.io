@@ -235,7 +235,7 @@ extern RC forceFlushPool(BM_BufferPool *const bm)
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
 	
-	int i;	
+	int i = 0;	
 	while (i < bufferSize)
 	{
 		if (pageFrame[i].fixCount != 0){}
@@ -260,7 +260,7 @@ extern RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page)
 {
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
-	int i;
+	int i = 0;
 	While(i < bufferSize)
 	{
 		if(pageFrame[i].pageNum == page->pageNum)
@@ -278,7 +278,7 @@ extern RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page)
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
 	
-	int i;
+	int i = 0;
 	boolean done = false;
 	while (i < bufferSize && !done)
 	{
@@ -298,22 +298,18 @@ extern RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page)
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
 	
-	int i;
-	// Iterating through all the pages in the buffer pool
-	for(i = 0; i < bufferSize; i++)
+	int i = 0;
+	while(i < bufferSize)
 	{
-		// If the current page = page to be written to disk, then right the page to the disk using the storage manager functions
-		if(pageFrame[i].pageNum == page->pageNum)
+		if(pageFrame[i].pageNum != page->pageNum){}
+		else
 		{		
 			openPageFile(bm->pageFile, &fh);
 			writeBlock(pageFrame[i].pageNum, &fh, pageFrame[i].data);
-		
-			// Mark page as undirty because the modified page has been written to disk
 			pageFrame[i].dirtyBit = 0;
-			
-			// Increase the writeCount which records the number of writes done by the buffer manager.
 			writeCount++;
 		}
+		i++;
 	}	
 	return RC_OK;
 }
@@ -473,12 +469,11 @@ extern PageNumber *getFrameContents (BM_BufferPool *const bm)
 	PageNumber *frameContents = malloc(sizeof(PageNumber) * bufferSize);
 	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
 	PageFrame *pageFrame = helper(bm, page);
-	
-	int i = 0;
-	// Iterating through all the pages in the buffer pool and setting frameContents' value to pageNum of the page
-	while(i < bufferSize) {
-		frameContents[i] = (pageFrame[i].pageNum != -1) ? pageFrame[i].pageNum : NO_PAGE;
-		i++;
+	int i;
+	for(i = 0; i < bufferSize; i++) 
+	{
+		if (pageFrame[i].pageNum == -1) frameContents[i] = NO_PAGE;
+		else frameContents[i] = pageFrame[i].pageNu;
 	}
 	return frameContents;
 }
@@ -510,20 +505,18 @@ extern int *getFixCounts (BM_BufferPool *const bm)
 	// Iterating through all the pages in the buffer pool and setting fixCounts' value to page's fixCount
 	while(i < bufferSize)
 	{
-		fixCounts[i] = (pageFrame[i].fixCount != -1) ? pageFrame[i].fixCount : 0;
+		if (pageFrame[i].fixCount == -1) fixCounts[i] = 0;
+		else fixCounts[i] = pageFrame[i].fixCount;
 		i++;
 	}	
 	return fixCounts;
 }
 
-// This function returns the number of pages that have been read from disk since a buffer pool has been initialized.
 extern int getNumReadIO (BM_BufferPool *const bm)
 {
-	// Adding one because with start rearIndex with 0.
 	return (rearIndex + 1);
 }
 
-// This function returns the number of pages written to the page file since the buffer pool has been initialized.
 extern int getNumWriteIO (BM_BufferPool *const bm)
 {
 	return writeCount;
