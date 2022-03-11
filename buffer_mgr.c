@@ -12,7 +12,7 @@ typedef struct Page
 	int dirtyBit; // Used to indicate whether the contents of the page has been modified by the client
 	int fixCount; // Used to indicate the number of clients using that page at a given instance
 	int hitNum;   // Used by LRU algorithm to get the least recently used page	
-	int refNum;   // Used by LFU algorithm to get the least frequently used page
+// 	int refNum;   // Used by LFU algorithm to get the least frequently used page
 } PageFrame;
 
 // "bufferSize" represents the size of the buffer pool i.e. maximum number of page frames that can be kept into the buffer pool
@@ -35,12 +35,17 @@ int clockPointer = 0;
 // "lfuPointer" is used by LFU algorithm to store the least frequently used page frame's position. It speeds up operation  from 2nd replacement onwards.
 int lfuPointer = 0;
 
+extern void helper(BM_BufferPool *const bm, PageFrame *page)
+{
+	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
+}
+
 // Defining FIFO (First In First Out) function
 extern void FIFO(BM_BufferPool *const bm, PageFrame *page)
 {
 	//printf("FIFO Started");
-	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
-	
+// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	int i, frontIndex;
 	frontIndex = rearIndex % bufferSize;
 
@@ -80,7 +85,8 @@ extern void FIFO(BM_BufferPool *const bm, PageFrame *page)
 extern void LFU(BM_BufferPool *const bm, PageFrame *page)
 {
 	//printf("LFU Started");
-	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
+// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i, j, leastFreqIndex, leastFreqRef;
 	leastFreqIndex = lfuPointer;	
@@ -131,7 +137,8 @@ extern void LFU(BM_BufferPool *const bm, PageFrame *page)
 // Defining LRU (Least Recently Used) function
 extern void LRU(BM_BufferPool *const bm, PageFrame *page)
 {	
-	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	int i, leastHitIndex, leastHitNum;
 
 	// Interating through all the page frames in the buffer pool.
@@ -179,7 +186,8 @@ extern void LRU(BM_BufferPool *const bm, PageFrame *page)
 extern void CLOCK(BM_BufferPool *const bm, PageFrame *page)
 {	
 	//printf("CLOCK Started");
-	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	while(1)
 	{
 		clockPointer = (clockPointer % bufferSize == 0) ? 0 : clockPointer;
@@ -223,9 +231,7 @@ extern void CLOCK(BM_BufferPool *const bm, PageFrame *page)
    strategy represents the page replacement strategy (FIFO, LRU, LFU, CLOCK) that will be used by this buffer pool
    stratData is used to pass parameters if any to the page replacement strategy
 */
-extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, 
-		  const int numPages, ReplacementStrategy strategy, 
-		  void *stratData)
+extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, void *stratData)
 {
 	bm->pageFile = (char *)pageFileName;
 	bm->numPages = numPages;
@@ -258,7 +264,8 @@ extern RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName
 // Shutdown i.e. close the buffer pool, thereby removing all the pages from the memory and freeing up all resources and releasing some memory space.
 extern RC shutdownBufferPool(BM_BufferPool *const bm)
 {
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	// Write all dirty pages (modified pages) back to disk
 	forceFlushPool(bm);
 
@@ -281,7 +288,8 @@ extern RC shutdownBufferPool(BM_BufferPool *const bm)
 // This function writes all the dirty pages (having fixCount = 0) to disk
 extern RC forceFlushPool(BM_BufferPool *const bm)
 {
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i;
 	// Store all dirty pages (modified pages) in memory to page file on disk	
@@ -309,7 +317,8 @@ extern RC forceFlushPool(BM_BufferPool *const bm)
 // This function marks the page as dirty indicating that the data of the page has been modified by the client
 extern RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page)
 {
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i;
 	// Iterating through all the pages in the buffer pool
@@ -328,7 +337,8 @@ extern RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page)
 // This function unpins a page from the memory i.e. removes a page from the memory
 extern RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page)
 {	
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i;
 	// Iterating through all the pages in the buffer pool
@@ -347,7 +357,8 @@ extern RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page)
 // This function writes the contents of the modified pages back to the page file on disk
 extern RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page)
 {
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i;
 	// Iterating through all the pages in the buffer pool
@@ -375,7 +386,8 @@ extern RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page)
 extern RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum)
 {
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	// Checking if buffer pool is empty and this is the first page to be pinned
 	if(pageFrame[0].pageNum == -1)
@@ -523,7 +535,8 @@ extern RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 extern PageNumber *getFrameContents (BM_BufferPool *const bm)
 {
 	PageNumber *frameContents = malloc(sizeof(PageNumber) * bufferSize);
-	PageFrame *pageFrame = (PageFrame *) bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i = 0;
 	// Iterating through all the pages in the buffer pool and setting frameContents' value to pageNum of the page
@@ -538,7 +551,8 @@ extern PageNumber *getFrameContents (BM_BufferPool *const bm)
 extern bool *getDirtyFlags (BM_BufferPool *const bm)
 {
 	bool *dirtyFlags = malloc(sizeof(bool) * bufferSize);
-	PageFrame *pageFrame = (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i;
 	// Iterating through all the pages in the buffer pool and setting dirtyFlags' value to TRUE if page is dirty else FALSE
@@ -553,7 +567,8 @@ extern bool *getDirtyFlags (BM_BufferPool *const bm)
 extern int *getFixCounts (BM_BufferPool *const bm)
 {
 	int *fixCounts = malloc(sizeof(int) * bufferSize);
-	PageFrame *pageFrame= (PageFrame *)bm->mgmtData;
+	// 	PageFrame *pageFrame = (PageFrame *) bm->mgmtData    ******************** goes to helper line 38 - 41
+	helper(bm, page);
 	
 	int i = 0;
 	// Iterating through all the pages in the buffer pool and setting fixCounts' value to page's fixCount
